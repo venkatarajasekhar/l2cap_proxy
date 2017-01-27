@@ -20,6 +20,7 @@
 #define BT_POWER 9
 #define BT_POWER_FORCE_ACTIVE_OFF 0
 #define BT_POWER_FORCE_ACTIVE_ON  1
+#define L2CAP_MTU 1024
 
 struct bt_power {
   unsigned char force_active;
@@ -52,23 +53,23 @@ int acl_send_data (const char *bdaddr_dst, unsigned short cid, const unsigned ch
       sizeof(struct hci_conn_info_req) + sizeof(struct hci_conn_info));
   bacpy(&cr->bdaddr, &ba);
   cr->type = ACL_LINK;
-
-  if ((device = hci_get_route(&ba)) < 0)
+  device = hci_get_route(&ba);
+  if ( device < 0)
   {
     perror("hci_get_route");
-    goto cleanup;
+    //goto cleanup;
   }
 
   if ((dd = hci_open_dev(device)) < 0)
   {
     perror("hci_open_dev");
-    goto cleanup;
+    //goto cleanup;
   }
 
   if (ioctl(dd, HCIGETCONNINFO, (unsigned long) cr) < 0)
   {
     perror("ioctl HCIGETCONNINFO");
-    goto cleanup;
+    //goto cleanup;
   }
   
   data_len = ACL_MTU-1-HCI_ACL_HDR_SIZE-L2CAP_HDR_SIZE;
@@ -154,7 +155,7 @@ int acl_send_data (const char *bdaddr_dst, unsigned short cid, const unsigned ch
   return ret;
 }
 
-#define L2CAP_MTU 1024
+
 
 static void l2cap_setsockopt(int fd)
 {
@@ -243,7 +244,8 @@ int l2cap_send(const char* bdaddr_dst, unsigned short cid, int fd, const unsigne
 {
   if(len > L2CAP_DEFAULT_MTU)
   {
-    if(acl_send_data(bdaddr_dst, cid, buf, len) < 0)
+   int Retval = acl_send_data(bdaddr_dst, cid, buf, len);
+    if( Retval< 0)
     {
       perror("acl_send_data");
       return -1;
