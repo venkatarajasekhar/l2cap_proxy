@@ -21,12 +21,14 @@
 #define BT_POWER_FORCE_ACTIVE_OFF 0
 #define BT_POWER_FORCE_ACTIVE_ON  1
 
+
 struct bt_power {
   unsigned char force_active;
 };
 #endif
 
 #define ACL_MTU 1024
+#define L2CAP_MTU 1024
 
 /*
  * This function can be used to bypass the l2cap outgoing MTU check of the Linux kernel.
@@ -35,7 +37,7 @@ struct bt_power {
 int acl_send_data (const char *bdaddr_dst, unsigned short cid, const unsigned char *data, unsigned short plen)
 {
   int ret = -1, dd, device;
-  struct hci_conn_info_req *cr = 0;
+  struct hci_conn_info_req *cr = NULL;
   bdaddr_t ba;
   uint8_t type = HCI_ACLDATA_PKT;
   hci_acl_hdr acl_hdr;
@@ -56,22 +58,26 @@ int acl_send_data (const char *bdaddr_dst, unsigned short cid, const unsigned ch
   if ((device = hci_get_route(&ba)) < 0)
   {
     perror("hci_get_route");
-    goto cleanup;
+    L2cap_ACL_DataDeallocation();
+    //goto cleanup;
   }
 
   if ((dd = hci_open_dev(device)) < 0)
   {
     perror("hci_open_dev");
-    goto cleanup;
+    L2cap_ACL_DataDeallocation();
+    //goto cleanup;
   }
 
   if (ioctl(dd, HCIGETCONNINFO, (unsigned long) cr) < 0)
   {
     perror("ioctl HCIGETCONNINFO");
-    goto cleanup;
+    //goto cleanup;
+   L2cap_ACL_DataDeallocation();
   }
   
   data_len = ACL_MTU-1-HCI_ACL_HDR_SIZE-L2CAP_HDR_SIZE;
+ 
   if(plen < data_len)
   {
     data_len = plen;
@@ -147,14 +153,16 @@ int acl_send_data (const char *bdaddr_dst, unsigned short cid, const unsigned ch
     
     plen -= data_len;
   }
+  return ret;
   
-  cleanup: free(cr);
+}
+void L2cap_ACL_DataDeallocation(void){
+   free(cr);
+   cr = NULL;
   if (dd >= 0)
     close(dd);
-  return ret;
+  return;  
 }
-
-#define L2CAP_MTU 1024
 
 static void l2cap_setsockopt(int fd)
 {
