@@ -40,6 +40,24 @@
 #define PSM_UDI_C_Plane 0x001D //Unrestricted Digital Information Profile
 #define PSM_ATT 0x001F
 #define PSM_3DSP 0x0021 //3D Synchronization Profile
+#define PSM_MAX_INDEX (sizeof(psm_list)/sizeof(*psm_list))
+
+#define LISTEN_INDEX 0
+#define SLAVE_INDEX  1
+#define MASTER_INDEX 2
+
+#define SLAVE_CONNECTING_INDEX 3
+#define MASTER_CONNECTING_INDEX 4
+
+#define MAX_INDEX 5
+
+#define CID_SLAVE_INDEX 0
+#define CID_MASTER_INDEX 1
+
+#define CID_MAX_INDEX 2
+static int debug;
+
+static volatile int done;
 
 static unsigned short psm_list[] =
 {
@@ -57,26 +75,6 @@ static unsigned short psm_list[] =
     PSM_ATT,
     PSM_3DSP
 };
-
-#define PSM_MAX_INDEX (sizeof(psm_list)/sizeof(*psm_list))
-
-#define LISTEN_INDEX 0
-#define SLAVE_INDEX  1
-#define MASTER_INDEX 2
-
-#define SLAVE_CONNECTING_INDEX 3
-#define MASTER_CONNECTING_INDEX 4
-
-#define MAX_INDEX 5
-
-#define CID_SLAVE_INDEX 0
-#define CID_MASTER_INDEX 1
-
-#define CID_MAX_INDEX 2
-
-static int debug = 0;
-
-static volatile int done = 0;
 
 void terminate(int sig)
 {
@@ -99,9 +97,29 @@ void dump(unsigned char* buf, int len)
 
 static void close_fd(struct pollfd* pfd)
 {
+  if(pfd){
   close(pfd->fd);
   pfd->fd = -1;
+  }
+  else{
+  printf("Pointer invalid\n");  
+  }
+  
 }
+void L2cap_PollFD_Init(void){
+struct pollfd pfd[MAX_INDEX][PSM_MAX_INDEX] = {};
+
+  int i, psm;
+  for(i=0; i<MAX_INDEX; ++i)
+  {
+    for(psm=0; psm<PSM_MAX_INDEX; ++psm)
+    {
+      pfd[i][psm].fd = -1;
+    }
+  }
+}
+
+
 
 int main(int argc, char *argv[])
 {
@@ -163,16 +181,7 @@ int main(int argc, char *argv[])
    * table 4: fds connecting to the slave
    * table 5: fds connecting to the master
    */
-  struct pollfd pfd[MAX_INDEX][PSM_MAX_INDEX] = {};
-
-  int i, psm;
-  for(i=0; i<MAX_INDEX; ++i)
-  {
-    for(psm=0; psm<PSM_MAX_INDEX; ++psm)
-    {
-      pfd[i][psm].fd = -1;
-    }
-  }
+  L2cap_PollFD_Init();
 
   for(psm=0; psm<PSM_MAX_INDEX; ++psm)
   {
