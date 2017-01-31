@@ -20,7 +20,7 @@
  *
  * \return 0 if successful, -1 otherwise
  */
-int bt_get_device_bdaddr(int device_number, char bdaddr[18])
+int bt_get_device_bdaddr(int device_number, char *bdaddr)
 {
   int ret = 0;
 
@@ -91,17 +91,19 @@ int bt_write_device_class(char* bdaddr, uint32_t class)
 int delete_stored_link_key(char* bdaddr, char* bdaddr_dest)
 {
   int ret = 0;
-
-  int id = get_device_id(bdaddr);
+  int s;
+  bdaddr_t bda;
+  int id ;
+  id = get_device_id(bdaddr);
 
   if(id < 0)
   {
     return -1;
   }
 
-  int s = hci_open_dev (id);
+   s = hci_open_dev (id);
 
-  bdaddr_t bda;
+  
   str2ba(bdaddr_dest, &bda);
 
   if(hci_delete_stored_link_key(s, &bda, 0, HCI_REQ_TIMEOUT) < 0)
@@ -117,17 +119,19 @@ int delete_stored_link_key(char* bdaddr, char* bdaddr_dest)
 int write_stored_link_key(char* bdaddr, char* bdaddr_dest, unsigned char* key)
 {
   int ret = 0;
-
-  int id = get_device_id(bdaddr);
+  bdaddr_t bda;
+  int id;
+  id = get_device_id(bdaddr);
 
   if(id < 0)
   {
     return -1;
   }
 
-  int s = hci_open_dev (id);
+  int s;
+   s = hci_open_dev (id);
 
-  bdaddr_t bda;
+  
   str2ba(bdaddr_dest, &bda);
 
   if(hci_write_stored_link_key(s, &bda, key, HCI_REQ_TIMEOUT) < 0)
@@ -145,7 +149,7 @@ int authenticate_link(char* bdaddr_dest)
   int ret = 0;
 
   int err = 0, dd;
-  struct hci_conn_info_req *cr = 0;
+  struct hci_conn_info_req *cr = NULL;
 
   // find the connection handle to the specified bluetooth device
   cr = (struct hci_conn_info_req*) malloc(
@@ -176,6 +180,7 @@ int authenticate_link(char* bdaddr_dest)
   }
 
   free(cr);
+  cr = NULL;
   close(dd);
 
   return ret;
@@ -186,7 +191,7 @@ int encrypt_link(char* bdaddr_dest)
   int ret = 0;
 
   int err = 0, dd;
-  struct hci_conn_info_req *cr = 0;
+  struct hci_conn_info_req *cr = NULL;
 
   // find the connection handle to the specified bluetooth device
   cr = (struct hci_conn_info_req*) malloc(
@@ -217,6 +222,7 @@ int encrypt_link(char* bdaddr_dest)
   }
 
   free(cr);
+  cr = NULL;
   close(dd);
 
   return ret;
